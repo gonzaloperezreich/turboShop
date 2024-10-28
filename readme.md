@@ -51,7 +51,16 @@ La interfaz frontend permite a los usuarios interactuar con el sistema de manera
    npm install
 
 2. **Correr el proyecto**
--  En la raiz del proyecto se debe correr python app.py (asegurandose de tener en el ambiente local spacy y numpy) -> servidor flask localhost:5500
--  En otra terminal dirigirse a la carpeta server y ejecutar npm run dev (habiendo hecho npm i previamente) 
+-  En la raiz del proyecto se debe correr 
+   ```bash
+   python app.py 
+(asegurandose de tener en el ambiente local spacy y numpy) -> servidor flask localhost:5500
+-  En otra terminal dirigirse a la carpeta server y ejecutar 
+   ```bash
+   npm run dev 
+(habiendo hecho npm i previamente) 
 Se debera crear un archivo .env con variables de entorno que se le serán facilitadas al evaluador por correo. -> servidor Node + Express localhost:3300
--  Finalmente para correr el frontend se debe ir a la carpeta turboClient y ejecutar npm run dev localhost:3000
+-  Finalmente para correr el frontend se debe ir a la carpeta turboClient y ejecutar 
+   ```bash
+   npm run dev 
+localhost:3000
