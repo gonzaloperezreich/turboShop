@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = 3300;
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
@@ -80,15 +80,91 @@ app.post('/predict', async (req, res) => {
     }
 });
 
-app.get('/todo', async (req, res) => {
-  const { data, error } = await supabase.from('Marcas').select('*');
-  if (error) {
-    console.error("Error al obtener todo:", error.message);
-    return res.status(500).json({ error: 'Error al obtener todo.' });
-  }
-  res.json(data);
-});
+app.get('/check', async (req, res) => {
+    const { marca, modelo } = req.query; // Obtener los parámetros de la consulta
 
+    if (!marca || !modelo) {
+        return res.status(400).json({ error: 'Se requieren marca y modelo como parámetros de consulta.' });
+    }
+
+    try {
+        // Consultar en Supabase
+        const { data: existingEntries, error: selectError } = await supabase
+            .from('ModelosMarcasAutos')
+            .select('*')
+            .eq('MARCA', marca)
+            .eq('MODELO', modelo);
+
+        if (selectError) {
+            console.error("Error al consultar en Supabase:", selectError.message);
+            return res.status(500).json({ error: 'Error al consultar en la base de datos.' });
+        }
+
+        // Verificar si hay coincidencias
+        if (existingEntries.length > 0) {
+            res.json({ exists: true, entries: existingEntries });
+        } else {
+            res.json({ exists: false });
+        }
+    } catch (error) {
+        console.error("Error al procesar la solicitud:", error.message);
+        res.status(500).json({ error: 'Error al procesar la solicitud.' });
+    }
+});
+const FuzzySet = require('fuzzyset.js');
+
+app.get('/checkByNameAndBand', async (req, res) => {
+    const { marca, modelo } = req.query;
+
+    if (!marca || !modelo) {
+        return res.status(400).json({ error: 'Se requieren marca y modelo como parámetros de consulta.' });
+    }
+
+    try {
+        const { data: existingEntries, error: selectError } = await supabase
+            .from('ModelosMarcasAutos')
+            .select('*');
+
+        if (selectError) {
+            console.error("Error al consultar en Supabase:", selectError.message);
+            return res.status(500).json({ error: 'Error al consultar en la base de datos.' });
+        }
+
+        // Coincidencias exactas
+        const exactMatches = existingEntries.filter(entry => 
+            entry.MARCA.toLowerCase() === marca.toLowerCase() &&
+            entry.MODELO.toLowerCase() === modelo.toLowerCase()
+        );
+
+        if (exactMatches.length > 0) {
+            return res.json({ exists: true, entries: exactMatches });
+        }
+
+        // Crear un conjunto difuso para marcas y modelos existentes
+        const marcasSet = FuzzySet(existingEntries.map(entry => entry.MARCA.toLowerCase()));
+        const modelosSet = FuzzySet(existingEntries.map(entry => entry.MODELO.toLowerCase()));
+
+        // Buscar coincidencias similares
+        const marcaSimilares = marcasSet.get(marca.toLowerCase());
+        const modeloSimilares = modelosSet.get(modelo.toLowerCase());
+
+        // Filtrar entradas similares
+        const similarEntries = existingEntries.filter(entry => 
+            (marcaSimilares && marcaSimilares.some(([match]) => match === entry.MARCA.toLowerCase())) ||
+            (modeloSimilares && modeloSimilares.some(([match]) => match === entry.MODELO.toLowerCase()))
+        );
+
+        if (similarEntries.length > 0) {
+            return res.json({ exists: true, entries: similarEntries });
+        } else {
+            return res.json({ exists: false });
+        }
+
+    } catch (error) {
+        console.error("Error al procesar la solicitud:", error.message);
+        res.status(500).json({ error: 'Error al procesar la solicitud.' });
+    }
+});
 app.listen(PORT, () => {
   console.log('Servidor corriendo, escuchando en el puerto', PORT);
 });
