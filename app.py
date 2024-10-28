@@ -33,7 +33,18 @@ valid_combinations = {
     "ssangyong": ["korando", "rexton", "musso", "actyon", "tivoli"]
 }
 
+def get_closest_brand(brand):
+    """Find the closest matching brand from valid_combinations."""
+    if brand.lower() in valid_combinations:
+        return brand.lower()
+    
+    matches = get_close_matches(brand.lower(), valid_combinations.keys(), n=1, cutoff=0.7)
+    if matches:
+        return matches[0]
+    return brand
+
 def get_closest_model(brand, model):
+    """Find the closest matching model for a given brand."""
     if brand in valid_combinations:
         matches = get_close_matches(model, valid_combinations[brand], n=1, cutoff=0.7)
         if matches:
@@ -41,15 +52,35 @@ def get_closest_model(brand, model):
     return model
 
 def find_brand_by_model(model):
+    """Find brand by exact model match."""
     for brand, models in valid_combinations.items():
         if model in models:
             return brand
     return None
 
+def preprocess_text(text):
+    """Preprocess text to correct potential brand misspellings."""
+    words = text.split()
+    processed_words = []
+    
+    for word in words:
+        # Check if this word might be a brand
+        closest_brand = get_closest_brand(word)
+        if closest_brand in valid_combinations:
+            processed_words.append(closest_brand)
+        else:
+            processed_words.append(word)
+    
+    return " ".join(processed_words)
+
 def process_text_in_cases(text):
-    lower_doc = nlp(text.lower())
-    upper_doc = nlp(text.upper())
-    mixed_doc = nlp(text)
+    """Process text in different cases after preprocessing."""
+    # Preprocess the text first
+    preprocessed_text = preprocess_text(text)
+    
+    lower_doc = nlp(preprocessed_text.lower())
+    upper_doc = nlp(preprocessed_text.upper())
+    mixed_doc = nlp(preprocessed_text)
     return [lower_doc, upper_doc, mixed_doc]
 
 @app.route('/predict', methods=['POST', 'OPTIONS'])
@@ -74,8 +105,11 @@ def predict():
 
             for doc in docs:
                 for ent in doc.ents:
-                    if ent.label_ == "BRAND" and ent.text.lower() in valid_combinations:
-                        entities["BRAND"] = ent.text.lower()
+                    if ent.label_ == "BRAND":
+                        # Apply fuzzy matching to detected brand
+                        closest_brand = get_closest_brand(ent.text)
+                        if closest_brand in valid_combinations:
+                            entities["BRAND"] = closest_brand
                     elif ent.label_ == "MODEL":
                         entities["MODEL"].append(ent.text.lower())
                     elif ent.label_ == "YEAR":
@@ -96,12 +130,9 @@ def predict():
                         valid_pairs.append((brand, closest_model))
             elif brand:
                 for model in set(entities["MODEL"]):
-                    if model in valid_combinations[brand]:
-                        valid_pairs.append((brand, model))
-                    else:
-                        closest_model = get_closest_model(brand, model)
-                        if closest_model in valid_combinations[brand]:
-                            valid_pairs.append((brand, closest_model))
+                    closest_model = get_closest_model(brand, model)
+                    if closest_model in valid_combinations[brand]:
+                        valid_pairs.append((brand, closest_model))
 
             combined_description = f"{entities['YEAR'] or ''} {entities['DISPLACEMENT'] or ''}".strip()
             
