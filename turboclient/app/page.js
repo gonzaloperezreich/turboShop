@@ -80,7 +80,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <form onSubmit={handlePredictSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-96">
         <h2 className="text-2xl font-bold mb-4 text-center">Clasificador de Modelos con modelo de reconocimiento inteligente</h2>
-        <p className="text-center mb-4">Aqui se puede ingresar lenguaje natural y el modelo en el servidor buscará por la mejor coincidencia:</p>
+        <p className="text-center mb-4">Aqui se puede ingresar lenguaje natural y el modelo en el servidor buscará por la mejor coincidencia (el texto puede estar mal escrito, por ejemplo hiunda accent):</p>
         
         <div className="mb-4">
           <input
