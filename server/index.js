@@ -25,7 +25,7 @@ app.post('/predict', async (req, res) => {
 
     try {
         // Llama al servicio de Flask
-        const response = await axios.post('http://127.0.0.1:5000/predict', { texts });
+        const response = await axios.post(`http://localhost:5500/predict`, { texts });
         const entities = response.data;
 
         const modelosMarcas = [];

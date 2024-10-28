@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import spacy
 from difflib import get_close_matches
-
+from flask_cors import CORS
 # Load the spaCy model
 output_dir = "./modelo_repuestos_ner"
 nlp = spacy.load(output_dir)
@@ -9,33 +9,28 @@ nlp = spacy.load(output_dir)
 # Dictionary of valid brand-model combinati
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 valid_combinations = {
-    "toyota": ["corolla", "camry", "hilux", "rav4", "prius", "land cruiser", "fortuner", "yaris", "avensis", "c-hr"],
-    "nissan": ["altima", "sentra", "rogue", "np300", "micra", "leaf", "juke", "x-trail", "maxima", "murano"],
-    "hyundai": ["elantra", "sonata", "tucson", "santafe", "kona", "i30","i10", "veloster", "accent", "palisade", "ioniq"],
-    "kia": ["sportage", "seltos", "optima", "rio", "sorento", "cerato", "niro", "carnival", "stinger", "picanto"],
-    "chevrolet": ["spark", "malibu", "tracker", "camaro", "cruze", "s10", "captiva", "trailblazer", "equinox", "suburban"],
-    "suzuki": ["swift", "vitara", "baleno", "s-cross", "jimny", "alto", "ignis", "celerio", "every", "gran vitara"],
-    "ford": ["focus", "fiesta", "explorer", "mustang", "edge", "f-150", "escape", "fusion", "maverick", "bronco"],
-    "mazda": ["cx-5", "mazda3", "mazda6", "cx-30", "mx-5", "cx-9", "mazda2", "rx-8", "b-series", "mx-30"],
-    "volkswagen": ["golf", "jetta", "tiguan", "passat", "polo", "arteon", "id.4", "cc", "beetle", "touran"],
-    "renault": ["clio", "kwid", "duster", "captur", "megane", "koleos", "talisman", "sandero", "laguna", "scenic"],
-    "subaru": ["outback", "forester", "wrx", "ascent", "crosstrek", "legacy", "impreza", "brz", "tribeca", "solterra"],
-    "volvo": ["xc90", "xc60", "s60", "v60", "s90", "v90", "xc40", "s40", "c30", "s80"],
-    "bmw": ["3 series", "5 series", "x5", "x3", "x1", "m3", "m5", "4 series", "2 series", "7 series"],
-    "audi": ["a3", "a4", "q5", "q7", "a6", "a8", "tt", "q3", "q8", "s4"],
-    "mercedes-benz": ["c-class", "e-class", "s-class", "gle", "glc", "a-class", "b-class", "gls", "sl", "amg"],
-    "peugeot": ["208", "308", "508", "3008", "5008", "partner", "expert", "boxer", "rcz", "3008 hybrid"],
-    "fiat": ["500", "panda", "tipo", "ducato", "punto", "freemont", "linea", "lancia", "freemont", "strada"],
-    "jaguar": ["f-type", "xe", "xf", "xj", "f-pace", "e-pace", "i-pace", "xk", "s-type", "x-type"],
-    "land rover": ["range rover", "discovery", "defender", "discovery sport", "rangerover velar", "evoque", "freelander", "series", "defender 90", "defender 110"],
-    "tesla": ["model s", "model 3", "model x", "model y", "roadster", "cybertruck", "model s plaid", "model 3 performance", "model x plaid", "model y long range"],
-    "lamborghini": ["huracan", "aventador", "urus", "gallardo", "veneno", "sián", "estoque", "jalpa", "murciélago", "reventón"],
-    "ferrari": ["488", "roma", "portofino", "f8 tributo", "sf90 stradale", "812 superfast", "gto", "california", "f12 berlinetta", "monza"],
-    "porsche": ["911", "cayenne", "macan", "panamera", "taycan", "boxster", "cayman", "918 spyder", "targa", "944"],
-    "bugatti": ["chiron", "veyron", "divo", "centodieci", "bugatti bolide", "la voiture noire", "bugatti pur sang", "bugatti eb110", "chiron sport", "chiron super sport"],
-    "aston martin": ["db11", "vantage", "dbs", "rapide", "valkyrie", "dbx", "one-77", "vantage roadster", "virage", "lagonda"],
-    "genesis": ["g80", "g70", "gv80", "gv70", "g90", "essentia", "x-85", "g70 shooting brake", "g90 ultimate", "g80 sport"],
+    "toyota": ["corolla", "hilux", "rav4", "yaris", "fortuner", "land cruiser", "c-hr"],
+    "nissan": ["navara", "x-trail", "kicks", "qashqai", "versa", "sentra", "march"],
+    "hyundai": ["accent", "creta", "tucson", "santa fe", "i10", "i20", "kona"],
+    "kia": ["rio", "sportage", "seltos", "cerato", "sorento", "carnival", "picanto"],
+    "chevrolet": ["sail", "onix", "tracker", "groove", "spark", "captiva", "equinox"],
+    "suzuki": ["baleno", "vitara", "swift", "celerio", "s-presso", "jimny", "alto"],
+    "ford": ["ranger", "everest", "escape", "explorer", "bronco", "f-150"],
+    "mazda": ["cx-5", "mazda3", "cx-30", "mazda2", "cx-9", "bt-50"],
+    "volkswagen": ["gol", "voyage", "tiguan", "amarok", "polo", "vento", "golf"],
+    "renault": ["duster", "koleos", "stepway", "capture", "kwid", "symbol"],
+    "subaru": ["forester", "outback", "crosstrek", "wrx", "legacy", "ascent"],
+    "volvo": ["xc90", "xc60", "s60", "v60", "xc40"],
+    "bmw": ["3 series", "x1", "x3", "x5", "2 series", "4 series"],
+    "audi": ["a3", "q2", "q3", "a4", "q5", "a6"],
+    "mercedes-benz": ["a-class", "c-class", "e-class", "glc", "gle"],
+    "peugeot": ["208", "2008", "3008", "5008", "partner"],
+    "fiat": ["500", "mobi", "strada", "fiorino"],
+    "jeep": ["compass", "renegade", "wrangler", "grand cherokee"],
+    "chery": ["tiggo 2", "tiggo 3", "tiggo 7", "arrizo 5"],
+    "ssangyong": ["korando", "rexton", "musso", "actyon", "tivoli"]
 }
 # Función para encontrar el modelo más cercano válido dentro de una marca específica
 def get_closest_model(brand, model):
@@ -136,6 +131,5 @@ def predict():
         })
 
     return jsonify(saved_entities)
-
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(host='0.0.0.0', port=5500)
